@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <script defer src="face-api.min.js"></script>
+  <!-- <script defer src="script.js"></script> -->
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    canvas {
+      position: absolute;
+    }
+  </style>
+</head>
+
+<body>
+  <form name="imageComparing">
+    <input type="file" accept="image" name="image1" id="image1">
+    <input type="file" accept="image" name="image2" id="image2">
+    <button id="compare" type="submit">compare</button><br>
+    <span id="result">...</span>
+  </form>
+</body>
+<script>
+  const form = document.querySelector("form")
+  const compareImages = async (e) => {
+    e.preventDefault()
+    const img1 = document.createElement("img")
+    const img2 = document.createElement("img")
+    const image1 = document.getElementById("image1")
+    const image2 = document.getElementById("image2")
+    console.log(URL.createObjectURL(image1.files[0]));
+    img1.src = URL.createObjectURL(image1.files[0])
+    img2.src = URL.createObjectURL(image2.files[0])
+    const body = document.querySelector("body")
+    await faceapi.nets.ssdMobilenetv1.loadFromUri('./models')
+    await faceapi.loadFaceLandmarkModel('./models')
+    await faceapi.loadFaceRecognitionModel('./models')
+    const detection1 = await faceapi.detectAllFaces(img1).withFaceLandmarks().withFaceDescriptors();
+    const detection2 = await faceapi.detectAllFaces(img2).withFaceLandmarks().withFaceDescriptors();
+    const distance = await faceapi.euclideanDistance(detection1[0].descriptor, detection2[0].descriptor);
+    console.log(distance);
+    if (distance < .5)
+      document.getElementById("result").innerText = "matched"
+    else
+      document.getElementById("result").innerText = "not matched"
+  }
+  form.addEventListener("submit", compareImages)
+</script>
+
+</html>
