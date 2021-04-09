@@ -7,7 +7,6 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Document</title>
   <script src="face-api.min.js"></script>
-  <!-- <script defer src="script.js"></script> -->
   <style>
     body {
       margin: 0;
@@ -18,44 +17,51 @@
       justify-content: center;
       align-items: center;
     }
-
-    canvas {
-      position: absolute;
-    }
   </style>
 </head>
 
 <body>
   <form name="imageComparing">
-    <input type="file" accept="image/*" name="image1">
-    <input type="file" accept="image/*" name="image2">
+    <input type="file" accept="image/*" name="image1" id="image1">
+    <input type="file" accept="image/*" name="image2" id="image2">
     <button id="compare" type="submit">compare</button><br>
     <span id="result">...</span>
   </form>
 </body>
 <script>
-  const form = document.querySelector("form")
   faceapi.nets.ssdMobilenetv1.loadFromUri('./models')
   faceapi.loadFaceLandmarkModel('./models')
   faceapi.loadFaceRecognitionModel('./models')
+
+  const imageHandler = (e) => {
+    const imageInput = e.target
+    const imgElement = document.createElement("img");
+    imgElement.src = URL.createObjectURL(imageInput.files[0]);
+    faceapi.detectAllFaces(imgElement).withFaceLandmarks().withFaceDescriptors().then((result) => {
+      imagesDescriptors[imageInput.id] = result[0]
+    })
+  }
+
   const compareImages = async (e) => {
     e.preventDefault()
-    const image1 = form.image1.files[0]
-    const image2 = form.image2.files[0]
-    const img1 = document.createElement("img")
-    const img2 = document.createElement("img")
-    img1.src = URL.createObjectURL(image1)
-    img2.src = URL.createObjectURL(image2)
-    const detection1 = await faceapi.detectAllFaces(img1).withFaceLandmarks().withFaceDescriptors();
-    const detection2 = await faceapi.detectAllFaces(img2).withFaceLandmarks().withFaceDescriptors();
-    const distance = await faceapi.euclideanDistance(detection1[0].descriptor, detection2[0].descriptor);
-    console.log(distance);
+    if (!imagesDescriptors["image1"] || !imagesDescriptors["image1"]) {
+      return
+    }
+    const distance = await faceapi.euclideanDistance(imagesDescriptors["image1"].descriptor, imagesDescriptors["image2"].descriptor);
+    console.log(distance); compareImages
     if (distance < .5)
       document.getElementById("result").innerText = "matched"
     else
       document.getElementById("result").innerText = "not matched"
   }
-  form.addEventListener("submit", compareImages)
+
+  const formElement = document.querySelector("form")
+  const imageInputElement1 = document.getElementById("image1")
+  const imageInputElement2 = document.getElementById("image2")
+  const imagesDescriptors = {}
+  imageInputElement1.addEventListener("change", imageHandler)
+  imageInputElement2.addEventListener("change", imageHandler)
+  formElement.addEventListener("submit", compareImages)
 </script>
 
 </html>
